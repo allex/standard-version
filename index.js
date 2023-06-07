@@ -7,6 +7,7 @@ const path = require('path')
 const printError = require('./lib/print-error')
 const tag = require('./lib/lifecycles/tag')
 const { resolveUpdaterObjectFromArgument } = require('./lib/updaters')
+const debugLog = require('./lib/debuglog').debugLog
 
 module.exports = async function standardVersion (argv) {
   const defaults = require('./defaults')
@@ -45,6 +46,8 @@ module.exports = async function standardVersion (argv) {
   }
 
   const args = Object.assign({}, defaults, argv)
+  debugLog('cli args: ', args)
+
   let pkg
   for (const packageFile of args.packageFiles) {
     const updater = resolveUpdaterObjectFromArgument(packageFile)
@@ -59,14 +62,17 @@ module.exports = async function standardVersion (argv) {
       break
     } catch (err) {}
   }
+
   try {
-    let version
-    if (pkg) {
-      version = pkg.version
-    } else if (args.gitTagFallback) {
-      version = await latestSemverTag(args.tagPrefix)
-    } else {
-      throw new Error('no package file found')
+    let version = args.fromVersion
+    if (!version) {
+      if (pkg) {
+        version = pkg.version
+      } else if (args.gitTagFallback) {
+        version = await latestSemverTag(args.tagPrefix)
+      } else {
+        throw new Error('no package file found')
+      }
     }
 
     const newVersion = await bump(args, version)

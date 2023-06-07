@@ -1,8 +1,11 @@
 const spec = require('conventional-changelog-config-spec')
+const yargs = require('yargs/yargs')
+const { hideBin } = require('yargs/helpers')
+
 const { getConfiguration } = require('./lib/configuration')
 const defaults = require('./defaults')
 
-const yargs = require('yargs')
+const cli = yargs(hideBin(process.argv))
   .usage('Usage: $0 [options]')
   .option('packageFiles', {
     default: defaults.packageFiles,
@@ -16,7 +19,7 @@ const yargs = require('yargs')
     alias: 'r',
     describe: 'Specify the release type manually (like npm version <major|minor|patch>)',
     requiresArg: true,
-    string: true
+    type: 'string',
   })
   .option('prerelease', {
     alias: 'p',
@@ -77,9 +80,18 @@ const yargs = require('yargs')
     default: defaults.skip
   })
   .option('dry-run', {
+    alias: 'd',
     type: 'boolean',
     default: defaults.dryRun,
     describe: 'See the commands that running standard-version would run'
+  })
+  .option('from-version', {
+    type: 'string',
+    describe: 'Specify the reference version, will skip pkg.version extraction'
+  })
+  .option('skip-unstable', {
+    type: 'boolean',
+    describe: 'Skip the unstable prerelease tags, tags should be matched as pattern: /.+-\w+\.\d+$/'
   })
   .option('git-tag-fallback', {
     type: 'boolean',
@@ -118,11 +130,12 @@ const yargs = require('yargs')
   .example('$0 -m "%s: see changelog for details"', 'Update changelog and tag release with custom commit message')
   .pkgConf('standard-version')
   .config(getConfiguration())
+  .strict()
   .wrap(97)
 
 Object.keys(spec.properties).forEach(propertyKey => {
   const property = spec.properties[propertyKey]
-  yargs.option(propertyKey, {
+  cli.option(propertyKey, {
     type: property.type,
     describe: property.description,
     default: defaults[propertyKey] ? defaults[propertyKey] : property.default,
@@ -130,4 +143,4 @@ Object.keys(spec.properties).forEach(propertyKey => {
   })
 })
 
-module.exports = yargs
+module.exports = cli
